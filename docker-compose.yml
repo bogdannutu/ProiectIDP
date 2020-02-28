@@ -1,0 +1,43 @@
+version: "3.7"
+services:
+  db:
+    networks:
+      mynetwork:
+    image: mysql:5.7
+    ports:
+      - "32000:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/:rw
+      - mysql_db:/var/lib/mysql
+
+  service:
+    networks:
+      mynetwork:
+    image: bogdannutu/idpbet-service
+    links:
+      - db
+    ports:
+      - "5000:5000"
+
+  admin:
+    networks:
+      mynetwork:
+    image: bogdannutu/idpbet-admin
+    links:
+      - db
+    ports:
+      - "5100:5000"
+
+  client:
+    networks:
+      mynetwork:
+    image: bogdannutu/idpbet-client
+    ports:
+      - "8080:80"
+networks:
+  mynetwork:
+    driver: bridge
+volumes:
+  mysql_db:

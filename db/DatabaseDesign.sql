@@ -33,6 +33,11 @@ CREATE TABLE IF NOT EXISTS Tickets (
 	PRIMARY KEY (id)
 );
 
+CREATE TABLE IF NOT EXISTS Ticket_Bet (
+	ticket_id INT NOT NULL,
+	bet_id INT NOT NULL
+);
+
 INSERT INTO Teams
 	(name, rate)
 VALUES

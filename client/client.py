@@ -100,7 +100,7 @@ if __name__ == '__main__':
 					print("Successful cancellation.")
 		elif option == 2:
 			print("You have chosen the Bet Service.")
-			s = input('What operation do you want to do?\n1 - List Best, 2 - Place Bet, 3 - Cancel Bet\n')
+			s = input('What operation do you want to do?\n1 - List Best, 2 - Place Bet, 3 - Cancel Bet, 4 - List Tickets, 5 - Place ticket\n')
 			option = int(s)
 			if option == 1:
 				URL = "http://" + sys.argv[2] + ":5000/bets"
@@ -148,6 +148,59 @@ if __name__ == '__main__':
 					print("Bet with id " + str(id) + " does not exist.")
 				elif r.status_code == 200:
 					print("Successful cancellation.")
+			elif option == 4:
+				URL = "http://" + sys.argv[2] + ":5000/tickets"
+				PARAMS = {}
+				r = requests.get(url = URL, params = PARAMS)
+				data = r.json()
+				print("%s|%s|%s|%s" %("Ticket Id".rjust(10), "Total Odds".rjust(15), "Amount".rjust(10), "Potential Gain".rjust(20)))
+				for ticket in data['tickets']:
+					print("%10d|%15.2f|%10.2f|%20.2f" %(ticket['ticket_id'], ticket['odds'], ticket['amount'], ticket['potential_gain']))
+			elif option == 5:
+				print()
+				URL = "http://" + sys.argv[2] + ":5000/bets"
+				PARAMS = {}
+				r = requests.get(url = URL, params = PARAMS)
+				data = r.json()
+				if not data['bets']:
+					print("You have not placed any bet yet!")
+				else:
+					print("Here are your bets:")
+					print("%s|%s|%s|%s|%s" %("Bet Id".rjust(10), "Home Team".rjust(20), "Away Team".rjust(20), "Bet Type".rjust(10), "Odds".rjust(10)))
+					all_bet_ids = []
+					id_to_odds = {}
+					for bet in data['bets']:
+						all_bet_ids.append(bet['bet_id'])
+						(home_team_name, away_team_name, odds) = get_teams_and_odds(bet['match_id'], bet['bet_type'])
+						print("%10d|%20s|%20s|%10s|%10.1f" %(bet['bet_id'], home_team_name, away_team_name, bet['bet_type'], odds))
+						id_to_odds[bet['bet_id']] = odds
+					ids = input('Insert the bets for your new ticket, separated by space: ').split(' ')
+					while True:
+						ok = True
+						for bet_id in ids:
+							if int(bet_id) not in all_bet_ids:
+								ok = False
+								print("Bet " + bet_id + " does not exist! Try again!")
+								break
+						if not ok:
+							ids = input('Insert the bets for your new ticket, separated by space: ').split(' ')
+						else:
+							break
+					total_odds = 1
+					for bet_id in ids:
+						total_odds = float(total_odds * id_to_odds[int(bet_id)])
+					total_odds = round(total_odds, 2)
+					print("Good! Your total odds is: " + str(total_odds))
+					amount = input("How much would you like to bet? (in RON) ")
+					amount = float(amount)
+
+					URL = "http://" + sys.argv[2] + ":5000/tickets/add"
+					PARAMS = {'betIDs': ids, 'odds': total_odds, 'amount': amount}
+					r = requests.get(url = URL, json = PARAMS)
+					if r.status_code == 200:
+						print("Ticket placed successfully!")
+					else:
+						print("Error! Status code is " + str(r.status_code))
 		elif option == 3:
 			print("Goodbye!")
 			break

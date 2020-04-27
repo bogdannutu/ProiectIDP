@@ -69,6 +69,37 @@ class Bet:
 			'bet_type':self.bet_type
 		}
 
+class Ticket:
+	def __init__(self, ticket_id, odds, amount, potential_gain):
+		self.ticket_id = ticket_id
+		self.odds = odds
+		self.amount = amount
+		self.potential_gain = potential_gain
+
+	def key(self):
+		return self.ticket_id
+
+	def __hash__(self):
+		return hash(self.key())
+
+	def __eq__(self, other):
+		if self.ticket_id == other.ticket_id:
+			return True
+		return False
+
+	def __str__(self):
+		res = ""
+		res += "Ticket(" + self.ticket_id + ") = {" + self.ticket_id + "," + self.odds + "," + self.amount + "," + self.potential_gain + "}"
+		return res
+
+	def serialize(self):
+		return {
+			'ticket_id':self.ticket_id,
+			'odds':self.odds,
+			'amount':self.amount,
+			'potential_gain':self.potential_gain
+		}
+
 @service.route('/bets', methods=['GET'])
 def get_bets():
 	config = {
@@ -90,6 +121,28 @@ def get_bets():
 	cursor.close()
 	connection.close()
 	return jsonify(bets=[b.serialize() for b in bets])
+
+@service.route('/tickets', methods=['GET'])
+def get_tickets():
+	config = {
+		'user':'root',
+		'password':'root',
+		'host':'db',
+		'port':'3306',
+		'database':'IdpBet'
+	}
+	connection = mysql.connector.connect(**config)
+	cursor = connection.cursor()
+	statement = "SELECT * FROM Tickets;"
+	cursor.execute(statement)
+	tickets = []
+	for (id, odds, amount, potential_gain) in cursor:
+		t = Ticket(id, odds, amount, potential_gain)
+		tickets.append(t)
+	connection.commit()
+	cursor.close()
+	connection.close()
+	return jsonify(tickets=[t.serialize() for t in tickets])
 
 @service.route('/bets/add', methods=['POST'])
 def place_bet():
@@ -159,6 +212,55 @@ def delete_bet():
 		cursor.close()
 		connection.close()
 		return Response(status = 200)
+
+@service.route('/tickets/add', methods=['GET'])
+def add_ticket():
+	params = request.get_json(silent = True)
+	if not params:
+		return Response(status = 400)
+
+	betIDs = params.get('betIDs')
+	if not betIDs:
+		return Response(status = 400)
+
+	total_odds = params.get('odds')
+	if not total_odds:
+		return Response(status = 400)
+
+	amount = params.get('amount')
+	if not amount:
+		return Response(status = 400)
+
+	config = {
+		'user':'root',
+		'password':'root',
+		'host':'db',
+		'port':'3306',
+		'database':'IdpBet'
+	}
+	connection = mysql.connector.connect(**config)
+	cursor = connection.cursor()
+
+	potential_gain = round(float(total_odds * amount), 2)
+
+	statement = "INSERT INTO Tickets(odds, amount, potential_gain) VALUES ({}, {}, {});".format(total_odds, amount, potential_gain)
+	cursor.execute(statement)
+
+	statement = "SELECT * FROM Tickets ORDER BY id DESC LIMIT 0, 1"
+	cursor.execute(statement)
+
+	newId = 0
+	for (id, _, _, _) in cursor:
+		newId = id
+		for bid in betIDs:
+			statement = "INSERT INTO Ticket_Bet (ticket_id, bet_id) VALUES ({}, {});".format(newId, bid)
+			cursor.execute(statement)
+
+	connection.commit()
+	cursor.close()
+	connection.close()
+
+	return Response(status = 200)
 
 if __name__ == '__main__':
 	service.run(host='0.0.0.0')

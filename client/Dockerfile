@@ -2,10 +2,8 @@ FROM python:3.6
 
 WORKDIR /client
 
-COPY . /client
+COPY requirements.txt /client
+RUN pip install -r requirements.txt
 
-RUN pip install requests
-
-EXPOSE 80
-
-CMD python3 client.py $ip_admin $ip_service
+COPY client.py /client
+CMD python client.py http://admin:5000/ http://service:5000/

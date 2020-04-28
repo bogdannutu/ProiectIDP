@@ -2,7 +2,15 @@ from flask import Flask, jsonify, request, Response
 import mysql.connector
 import json
 
-service = Flask(__name__)
+app = Flask(__name__)
+
+config = {
+	'user':'root',
+	'password':'root',
+	'host':'db',
+	'port':'3306',
+	'database':'IdpBet'
+}
 
 class Match:
 	def __init__(self, match_id, home_team_id, away_team_id, home_victory, draw, away_victory):
@@ -100,15 +108,8 @@ class Ticket:
 			'potential_gain':self.potential_gain
 		}
 
-@service.route('/bets', methods=['GET'])
+@app.route('/bets', methods=['GET'])
 def get_bets():
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 	statement = "SELECT * FROM Bets;"
@@ -122,15 +123,8 @@ def get_bets():
 	connection.close()
 	return jsonify(bets=[b.serialize() for b in bets])
 
-@service.route('/tickets', methods=['GET'])
+@app.route('/tickets', methods=['GET'])
 def get_tickets():
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 	statement = "SELECT * FROM Tickets;"
@@ -144,7 +138,7 @@ def get_tickets():
 	connection.close()
 	return jsonify(tickets=[t.serialize() for t in tickets])
 
-@service.route('/bets/add', methods=['POST'])
+@app.route('/bets/add', methods=['POST'])
 def place_bet():
 	params = request.get_json(silent = True)
 	if not params:
@@ -158,13 +152,6 @@ def place_bet():
 	if not bet_type:
 		return Response(status = 400)
 
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 
@@ -176,7 +163,7 @@ def place_bet():
 
 	return Response(status = 201)
 
-@service.route('/bets/cancel', methods=['DELETE'])
+@app.route('/bets/cancel', methods=['DELETE'])
 def delete_bet():
 	params = request.get_json(silent = True)
 	if not params:
@@ -186,13 +173,6 @@ def delete_bet():
 	if not bet_id:
 		return Response(status = 400)
 
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 	statement = "SELECT * FROM Bets WHERE id = {};".format(bet_id)
@@ -213,7 +193,7 @@ def delete_bet():
 		connection.close()
 		return Response(status = 200)
 
-@service.route('/tickets/add', methods=['GET'])
+@app.route('/tickets/add', methods=['GET'])
 def add_ticket():
 	params = request.get_json(silent = True)
 	if not params:
@@ -231,13 +211,6 @@ def add_ticket():
 	if not amount:
 		return Response(status = 400)
 
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 
@@ -263,4 +236,4 @@ def add_ticket():
 	return Response(status = 200)
 
 if __name__ == '__main__':
-	service.run(host='0.0.0.0')
+	app.run(host='0.0.0.0')

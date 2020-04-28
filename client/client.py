@@ -1,18 +1,19 @@
 import sys
 import requests
+import time
 import json
 
 def get_teams_names(match):
 	home_team_id = match['home_team_id']
 	away_team_id = match['away_team_id']
 
-	URL = "http://" + sys.argv[1] + ":5000/teams/" + str(home_team_id)
+	URL = ADMIN_URL + "teams/" + str(home_team_id)
 	PARAMS = {}
 	r = requests.get(url = URL, params = PARAMS)
 	tmp_data = r.json()
 	home_team_name = tmp_data['name']
 
-	URL = "http://" + sys.argv[1] + ":5000/teams/" + str(away_team_id)
+	URL = ADMIN_URL + "teams/" + str(away_team_id)
 	PARAMS = {}
 	r = requests.get(url = URL, params = PARAMS)
 	tmp_data = r.json()
@@ -21,7 +22,7 @@ def get_teams_names(match):
 	return (home_team_name, away_team_name)
 
 def get_teams_and_odds(match_id, bet_type):
-	URL = "http://" + sys.argv[1] + ":5000/matches/" + str(match_id)
+	URL = ADMIN_URL + "matches/" + str(match_id)
 	PARAMS = {}
 	r = requests.get(url = URL, params = PARAMS)
 	match = r.json()
@@ -39,6 +40,16 @@ def get_teams_and_odds(match_id, bet_type):
 	return (home_team_name, away_team_name, odds)
 
 if __name__ == '__main__':
+	ADMIN_URL = sys.argv[1]
+	SERVICE_URL = sys.argv[2]
+	path = ADMIN_URL + "teams"
+	print("Wait! The database is not available yet.")
+	response = requests.get(path)
+	while response.status_code != 200:
+		time.sleep(1)
+		response = requests.get(path)
+	print("Welcome to the IdpBet App!")
+
 	while True:
 		print("\n")
 		s = input('What do you want to test?\n1 - Admin App, 2 - Bet Service, 3 - Close Client\n')
@@ -49,7 +60,7 @@ if __name__ == '__main__':
 				'3 - List Match By Id, 4 - Add Match, 5 - Cancel Match\n')
 			option = int(s)
 			if option == 1:
-				URL = "http://" + sys.argv[1] + ":5000/teams"
+				URL = ADMIN_URL + "teams"
 				PARAMS = {}
 				r = requests.get(url = URL, params = PARAMS)
 				data = r.json()
@@ -57,7 +68,7 @@ if __name__ == '__main__':
 				for team in data['teams']:
 					print("%10d|%s|%10.1f" %(team['team_id'], team['name'].rjust(20), team['rate']))
 			elif option == 2:
-				URL = "http://" + sys.argv[1] + ":5000/matches"
+				URL = ADMIN_URL + "matches"
 				PARAMS = {}
 				r = requests.get(url = URL, params = PARAMS)
 				data = r.json()
@@ -67,7 +78,7 @@ if __name__ == '__main__':
 					print("%10d|%20s|%20s|%10.1f|%10.1f|%10.1f" %(match['match_id'], home_team_name, away_team_name, match['home_victory'], match['draw'], match['away_victory']))
 			elif option == 3:
 				s = input('Select Match Id: ')
-				URL = "http://" + sys.argv[1] + ":5000/matches/" + s
+				URL = ADMIN_URL + "matches/" + s
 				PARAMS = {}
 				r = requests.get(url = URL, params = PARAMS)
 				data = r.json()
@@ -83,7 +94,7 @@ if __name__ == '__main__':
 				home_victory = float(input('Insert home victory odds: '))
 				draw = float(input('Insert draw odds: '))
 				away_victory = float(input('Insert away victory odds: '))
-				URL = "http://" + sys.argv[1] + ":5000/matches/add"
+				URL = ADMIN_URL + "matches/add"
 				PARAMS = {'home_team':home_team, 'away_team':away_team, 'home_victory':home_victory, 'draw':draw, 'away_victory':away_victory}
 				r = requests.post(url = URL, json = PARAMS)
 				if r.status_code == 201:
@@ -91,7 +102,7 @@ if __name__ == '__main__':
 			elif option == 5:
 				s = input('Select Match Id that you want to cancel: ')
 				id = int(s)
-				URL = "http://" + sys.argv[1] + ":5000/matches/cancel"
+				URL = ADMIN_URL + "matches/cancel"
 				PARAMS = {'match_id':id}
 				r = requests.delete(url = URL, json = PARAMS)
 				if r.status_code == 404:
@@ -103,7 +114,7 @@ if __name__ == '__main__':
 			s = input('What operation do you want to do?\n1 - List Best, 2 - Place Bet, 3 - Cancel Bet, 4 - List Tickets, 5 - Place ticket\n')
 			option = int(s)
 			if option == 1:
-				URL = "http://" + sys.argv[2] + ":5000/bets"
+				URL = SERVICE_URL + "bets"
 				PARAMS = {}
 				r = requests.get(url = URL, params = PARAMS)
 				data = r.json()
@@ -112,7 +123,7 @@ if __name__ == '__main__':
 					(home_team_name, away_team_name, odds) = get_teams_and_odds(bet['match_id'], bet['bet_type'])
 					print("%10d|%20s|%20s|%10s|%10.1f" %(bet['bet_id'], home_team_name, away_team_name, bet['bet_type'], odds))
 			elif option == 2:
-				URL = "http://" + sys.argv[1] + ":5000/matches"
+				URL = ADMIN_URL + "matches"
 				PARAMS = {}
 				r = requests.get(url = URL, params = PARAMS)
 				data = r.json()
@@ -121,7 +132,7 @@ if __name__ == '__main__':
 					(home_team_name, away_team_name) = get_teams_names(match)
 					print("%10d|%20s|%20s|%10.1f|%10.1f|%10.1f" %(match['match_id'], home_team_name, away_team_name, match['home_victory'], match['draw'], match['away_victory']))
 				s = input('Choose the match id that you want to bet on: ')
-				URL = "http://" + sys.argv[1] + ":5000/matches/" + s
+				URL = ADMIN_URL + "matches/" + s
 				PARAMS = {}
 				r = requests.get(url = URL, params = PARAMS)
 				data = r.json()
@@ -133,7 +144,7 @@ if __name__ == '__main__':
 					print("Invalid bet. Choose again!")
 					bet_type = input("Choose your bet(1, X, 2): ")
 
-				URL = "http://" + sys.argv[2] + ":5000/bets/add"
+				URL = SERVICE_URL + "bets/add"
 				PARAMS = {'match_id':int(s), 'bet_type':bet_type}
 				r = requests.post(url = URL, json = PARAMS)
 				if r.status_code == 201:
@@ -141,7 +152,7 @@ if __name__ == '__main__':
 			elif option == 3:
 				s = input('Select Bet Id that you want to cancel: ')
 				id = int(s)
-				URL = "http://" + sys.argv[2] + ":5000/bets/cancel"
+				URL = SERVICE_URL + "bets/cancel"
 				PARAMS = {'bet_id':id}
 				r = requests.delete(url = URL, json = PARAMS)
 				if r.status_code == 404:
@@ -149,7 +160,7 @@ if __name__ == '__main__':
 				elif r.status_code == 200:
 					print("Successful cancellation.")
 			elif option == 4:
-				URL = "http://" + sys.argv[2] + ":5000/tickets"
+				URL = SERVICE_URL + "tickets"
 				PARAMS = {}
 				r = requests.get(url = URL, params = PARAMS)
 				data = r.json()
@@ -158,7 +169,7 @@ if __name__ == '__main__':
 					print("%10d|%15.2f|%10.2f|%20.2f" %(ticket['ticket_id'], ticket['odds'], ticket['amount'], ticket['potential_gain']))
 			elif option == 5:
 				print()
-				URL = "http://" + sys.argv[2] + ":5000/bets"
+				URL = SERVICE_URL + "bets"
 				PARAMS = {}
 				r = requests.get(url = URL, params = PARAMS)
 				data = r.json()
@@ -194,7 +205,7 @@ if __name__ == '__main__':
 					amount = input("How much would you like to bet? (in RON) ")
 					amount = float(amount)
 
-					URL = "http://" + sys.argv[2] + ":5000/tickets/add"
+					URL = SERVICE_URL + "tickets/add"
 					PARAMS = {'betIDs': ids, 'odds': total_odds, 'amount': amount}
 					r = requests.get(url = URL, json = PARAMS)
 					if r.status_code == 200:

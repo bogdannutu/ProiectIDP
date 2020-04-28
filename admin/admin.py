@@ -2,7 +2,15 @@ from flask import Flask, jsonify, request, Response
 import mysql.connector
 import json
 
-admin = Flask(__name__)
+app = Flask(__name__)
+
+config = {
+		'user':'root',
+		'password':'root',
+		'host':'db',
+		'port':'3306',
+		'database':'IdpBet'
+	}
 
 class Team:
 	def __init__(self, team_id, name, rate):
@@ -69,15 +77,8 @@ class Match:
 			'away_victory':self.away_victory 
 		}
 
-@admin.route('/teams', methods=['GET'])
+@app.route('/teams', methods=['GET'])
 def get_teams():
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 	statement = "SELECT * FROM Teams;"
@@ -91,15 +92,8 @@ def get_teams():
 	connection.close()
 	return jsonify(teams=[t.serialize() for t in teams])
 
-@admin.route('/teams/<int:team_id>', methods=['GET'])
+@app.route('/teams/<int:team_id>', methods=['GET'])
 def get_team(team_id):
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 	statement = "SELECT * FROM Teams WHERE id = {};".format(team_id)
@@ -116,15 +110,8 @@ def get_team(team_id):
 	else:
 		return jsonify(t.serialize())
 
-@admin.route('/matches', methods=['GET'])
+@app.route('/matches', methods=['GET'])
 def get_matches():
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 	statement = "SELECT * FROM Matches;"
@@ -138,15 +125,8 @@ def get_matches():
 	connection.close()
 	return jsonify(matches=[m.serialize() for m in matches])
 
-@admin.route('/matches/<int:match_id>', methods=['GET'])
+@app.route('/matches/<int:match_id>', methods=['GET'])
 def get_match(match_id):
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 	statement = "SELECT * FROM Matches WHERE id = {};".format(match_id)
@@ -163,7 +143,7 @@ def get_match(match_id):
 	else:
 		return jsonify(m.serialize())
 
-@admin.route('/matches/add', methods=['POST'])
+@app.route('/matches/add', methods=['POST'])
 def add_match():
 	params = request.get_json(silent = True)
 	if not params:
@@ -189,13 +169,6 @@ def add_match():
 	if not away_victory:
 		return Response(status = 400)
 
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 	statement = "INSERT INTO Matches (home_team, away_team, home_victory, draw, away_victory) VALUES ({},{},{},{},{});".format(home_team, away_team, home_victory, draw, away_victory)
@@ -206,7 +179,7 @@ def add_match():
 
 	return Response(status = 201)
 
-@admin.route('/matches/cancel', methods=['DELETE'])
+@app.route('/matches/cancel', methods=['DELETE'])
 def delete_match():
 	params = request.get_json(silent = True)
 	if not params:
@@ -216,13 +189,6 @@ def delete_match():
 	if not match_id:
 		return Response(status = 400)
 
-	config = {
-		'user':'root',
-		'password':'root',
-		'host':'db',
-		'port':'3306',
-		'database':'IdpBet'
-	}
 	connection = mysql.connector.connect(**config)
 	cursor = connection.cursor()
 	statement = "SELECT * FROM Matches WHERE id = {};".format(match_id)
@@ -244,4 +210,4 @@ def delete_match():
 		return Response(status = 200)
 
 if __name__ == '__main__':
-	admin.run(host='0.0.0.0')
+	app.run(host='0.0.0.0')

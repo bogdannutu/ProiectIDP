@@ -11,21 +11,21 @@ services:
       - mysql_db:/var/lib/mysql
 
   service:
-    build: ./service
+    image: bogdannutu/idpbet-service
     ports:
       - "7777:5000"
     depends_on:
       - db
   
   admin:
-    build: ./admin
+    image: bogdannutu/idpbet-admin
     ports:
       - "5000:5000"
     depends_on:
       - db
 
   client:
-    build: ./client
+    image: bogdannutu/idpbet-client
     depends_on:
       - service
       - admin
@@ -38,7 +38,7 @@ services:
       - "8086:8086"
 
   adapter:
-    build: ./adapter
+    image: bogdannutu/idpbet-adapter
     ports:
       - 4000:80
     depends_on:
